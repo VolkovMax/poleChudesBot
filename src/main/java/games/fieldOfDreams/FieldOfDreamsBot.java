@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static games.fieldOfDreams.Constants.*;
+import static games.fieldOfDreams.Words.getRandomTrackPhrase;
 import static games.fieldOfDreams.Words.getRandomWord;
 
 /**
@@ -57,6 +58,10 @@ public class FieldOfDreamsBot extends TelegramLongPollingBot {
             else if (gameSessions.containsKey(chatId)
                     && text.length() == gameSessions.get(chatId).getWord().length()) {
                 processWordGuess(chatId, userId, userName, text);
+            }
+            else if (text.equals("/track"))
+            {
+                sendMessage(chatId, getRandomTrackPhrase());
             }
         }
     }
@@ -181,7 +186,7 @@ public class FieldOfDreamsBot extends TelegramLongPollingBot {
      */
     @Override
     public String getBotUsername() {
-        return TEST_BOT_NAME;
+        return BOT_NAME;
     }
 
     /**
@@ -189,6 +194,6 @@ public class FieldOfDreamsBot extends TelegramLongPollingBot {
      */
     @Override
     public String getBotToken() {
-        return TEST_BOT_TOKEN;
+        return BOT_TOKEN;
     }
 }
