@@ -38,3 +38,5 @@ build/
 .DS_Store
 # Project exclude paths
 /out/
+
+src/main/java/games/fieldOfDreams/Constants.java
