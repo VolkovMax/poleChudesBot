@@ -38,4 +38,5 @@ build/
 .DS_Store
 # Project exclude paths
 /out/
-poleChudesBot/esrc/main/java/games/fieldOfDreams/Constants.java
+
+src/main/java/games/fieldOfDreams/Constants.java
