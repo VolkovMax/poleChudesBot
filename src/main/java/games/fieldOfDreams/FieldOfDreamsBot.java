@@ -11,8 +11,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static games.fieldOfDreams.Constants.BOT_NAME;
-import static games.fieldOfDreams.Constants.BOT_TOKEN;
+import static games.fieldOfDreams.Constants.*;
 import static games.fieldOfDreams.Words.getRandomWord;
 
 /**
@@ -32,36 +31,58 @@ public class FieldOfDreamsBot extends TelegramLongPollingBot {
      */
     private Map<Long, Map<Long, Player>> playerScores = new HashMap<>();
 
+    /**
+     * Переопределенный метод обработки сообщения от пользователя
+     *
+     * @param update
+     */
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage()) {
-            Message message = update.getMessage();
+            var message = update.getMessage();
             long chatId = message.getChatId();
             long userId = message.getFrom().getId();
             var userName = message.getFrom().getFirstName();
             var text = message.getText().trim().toLowerCase();
 
-            if (text.equals("/games")) {
+            //запускаем игру Поле чудес
+            if (text.equals("/startfield")) {
                 startGame(chatId);
-            } else if (text.matches("[а-яА-Я]")) { // Одна буква
+            }
+            //проверяем букву, есть ли она в слове
+            else if (text.matches("[а-яА-Я]")) {
                 processGuess(chatId, userId, userName, text.charAt(0));
-            } else if (gameSessions.containsKey(chatId) && text.length() == gameSessions.get(chatId).getWord().length()) { // Полное слово
+            }
+            //проверяем названное пользователем слово
+            else if (gameSessions.containsKey(chatId)
+                    && text.length() == gameSessions.get(chatId).getWord().length()) {
                 processWordGuess(chatId, userId, userName, text);
             }
         }
     }
 
+    /**
+     * Начало игры
+     * @param chatId - id чата, в котором запущена игра
+     */
     private void startGame(long chatId) {
         var word = getRandomWord();
         gameSessions.put(chatId, new GameSession(word));
         playerScores.put(chatId, new HashMap<>());
-        sendMessage(chatId, "Новая игра началась! Загаданное слово: " + gameSessions.get(chatId).getHiddenWord());
+        sendMessage(chatId, "Я сказала СТАРТУЕМ! (С) Загаданное слово: " + gameSessions.get(chatId).getHiddenWord());
     }
 
+    /**
+     * Метод обрабатывающий введенную пользователем букву
+     * @param chatId - id чата, в котором запущена игра
+     * @param userId - id пользователя
+     * @param userName - имя пользователя
+     * @param letter - введенная буква
+     */
     private void processGuess(long chatId, long userId, String userName, char letter) {
         GameSession session = gameSessions.get(chatId);
         if (session == null) {
-            sendMessage(chatId, "Начните игру с помощью команды /game.");
+            sendMessage(chatId, "Начни игру с помощью команды /startfield.");
             return;
         }
 
@@ -69,7 +90,7 @@ public class FieldOfDreamsBot extends TelegramLongPollingBot {
 
         if (session.isLetterUsed(letter)) {
             player.addScore(-1);
-            sendMessage(chatId, userName + ", эта буква уже называлась! У вас -1 очко.");
+            sendMessage(chatId, userName + ", не, ну ты индеец, я балдю. Была уже такая буква. У тебя -1 очко.");
             return;
         }
 
@@ -77,10 +98,10 @@ public class FieldOfDreamsBot extends TelegramLongPollingBot {
         String hiddenWord = session.getHiddenWord();
 
         if (isCorrect) {
-            player.addScore(3);
-            sendMessage(chatId, userName + ", верно! Буква '" + letter + "' есть в слове!\n" + hiddenWord);
+            player.addScore(2);
+            sendMessage(chatId, userName + ", ура, ёпта! Буква '" + letter + "' есть в слове!\n" + hiddenWord);
         } else {
-            sendMessage(chatId, userName + ", неверно! Буквы '" + letter + "' нет в слове.\n" + hiddenWord);
+            sendMessage(chatId, userName + ", ты ебобо? Буквы '" + letter + "' нет в слове.\n" + hiddenWord);
         }
 
         if (session.isWordGuessed()) {
@@ -88,6 +109,13 @@ public class FieldOfDreamsBot extends TelegramLongPollingBot {
         }
     }
 
+    /**
+     * Метод обрабатывающий введенное пользователем слово
+     * @param chatId - id чата, в котором запущена игра
+     * @param userId - id пользователя
+     * @param userName - имя пользователя
+     * @param word - введенное пользователем слово
+     */
     private void processWordGuess(long chatId, long userId, String userName, String word) {
         GameSession session = gameSessions.get(chatId);
         if (session == null) return;
@@ -98,14 +126,21 @@ public class FieldOfDreamsBot extends TelegramLongPollingBot {
             player.addScore(session.getWord().length() * 2);
             endGame(chatId, userId, userName, word, true);
         } else {
-            sendMessage(chatId, userName + ", неправильное слово! Попробуйте ещё раз.");
+            sendMessage(chatId, userName + ", давай по новой, Миша, все хуйня.");
         }
     }
 
+    /**
+     * Метод обрабатывающий окончание игры
+     * @param chatId - id чата, в котором запущена игра
+     * @param userName - имя пользователя
+     * @param word - введенное пользователем слово
+     * @param guessed - отгадано ли слово
+     */
     private void endGame(long chatId, long userId, String userName, String word, boolean guessed) {
         String message = guessed ?
-                "Поздравляем, " + userName + "! Вы угадали слово: " + word :
-                "Игра окончена! Загаданное слово было: " + word;
+                "Йуху, " + userName + "! Наконец-то ты угадал слово: " + word :
+                "Игра окончена!";
 
         message += "\nОчки участников:\n" + formatScores(chatId);
         sendMessage(chatId, message);
@@ -113,6 +148,10 @@ public class FieldOfDreamsBot extends TelegramLongPollingBot {
         playerScores.remove(chatId);
     }
 
+    /**
+     * Метод вывода очков участников
+     * @param chatId - id чата, в котором запущена игра
+     */
     private String formatScores(long chatId) {
         StringBuilder sb = new StringBuilder();
         playerScores.get(chatId).values().forEach(player ->
@@ -120,6 +159,11 @@ public class FieldOfDreamsBot extends TelegramLongPollingBot {
         return sb.toString();
     }
 
+    /**
+     * Метод отправки сообщений ботом
+     * @param chatId - id чата, в котором запущена игра
+     * @param text - текст сообщения
+     */
     private void sendMessage(long chatId, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
@@ -132,13 +176,19 @@ public class FieldOfDreamsBot extends TelegramLongPollingBot {
         }
     }
 
+    /**
+     * Получить имя бота
+     */
     @Override
     public String getBotUsername() {
-        return BOT_NAME;
+        return TEST_BOT_NAME;
     }
 
+    /**
+     * Получить токен бота
+     */
     @Override
     public String getBotToken() {
-        return BOT_TOKEN;
+        return TEST_BOT_TOKEN;
     }
 }

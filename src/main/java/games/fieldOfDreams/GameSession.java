@@ -33,7 +33,7 @@ public class GameSession {
      */
     public GameSession(String word) {
         this.word = word;
-        this.hiddenWord = new StringBuilder(word.replaceAll(".", "*"));
+        this.hiddenWord = new StringBuilder(word.replaceAll(".", "❏"));
     }
 
     /**
